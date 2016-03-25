@@ -4,7 +4,7 @@ This plugin enables a smarter way to translate a [Lektor](http://getlektor.com) 
 
 ## Principles
 
-The idea of this plugin is to capture the **sentences** from your **content**, and populate a standard *Gettext* [PO file](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html). Using usual tools, user can translate these files, very easily. Then the plugin will merge the translations into new _alternative_ content files, providing a translated website.
+The idea of this plugin is to capture the **sentences** from your **content**, and populate a standard *Gettext* [PO file](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html). Using usual tools, user can translate these files, very easily. Then the plugin will merge the translations into new [_alternative_](https://www.getlektor.com/docs/content/alts/) content files, providing a translated website.
 
 ## Configuration
 
@@ -147,7 +147,7 @@ See [Lektor Documentation](https://www.getlektor.com/docs/content/alts/) for mor
 
 ## Support
 
-This plugin is provided as-is by NumeriCube a human-sized Paris-based company prodiving tailored services to smart customers. 
+This plugin is provided as-is by [NumeriCube](http://numericube.com) a human-sized Paris-based company prodiving tailored services to smart customers. 
 
 We will be happy to try to help you with this plugin if need. Just file an issue on our [GitHub account](https://gihub.com/numericube/lektor-i18n-plugin/).
 

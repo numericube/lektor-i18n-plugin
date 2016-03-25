@@ -5,6 +5,7 @@ setup(
     version='0.1',
     author=u'NumeriCube',
     author_email='support@numericube.com',
+    url='https://github.com/numericube/lektor-i18n-plugin',
     license='GPL',
     py_modules=['lektor_i18n'],
     entry_points={

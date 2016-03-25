@@ -133,15 +133,15 @@ Due to the way Lektor building system is designed, all these steps happen on eve
 
 It's still the user responsability to modify the project file in order to include the expected languages :
 
-[alternatives.en]
-name = English
-primary = yes
-locale = en_US
+    [alternatives.en]
+    name = English
+    primary = yes
+    locale = en_US
 
-[alternatives.fr]
-name = French
-url_prefix = /fr/
-locale = fr
+    [alternatives.fr]
+    name = French
+    url_prefix = /fr/
+    locale = fr
 
 See [Lektor Documentation](https://www.getlektor.com/docs/content/alts/) for more information.
 

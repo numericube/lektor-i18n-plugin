@@ -1,10 +1,10 @@
 # Lektor i18n plugin
 
-This plugins enable a smarter way to translate a Lektor static website using old-good PO files. So you can use your beloved translation processes and tools.
+This plugin enables a smarter way to translate a [Lektor](http://getlektor.com) static website using old-good PO files. So you can use your beloved translation processes and tools.
 
 ## Principles
 
-The idea of this plugin is to capture the **sentences** from your **content**, and populate a standard *Gettext* PO file. Using usual tools, user can translate these files, very easily. Then the plugin will merge the translations into new _alternative_ content files, providing a translated website.
+The idea of this plugin is to capture the **sentences** from your **content**, and populate a standard *Gettext* [PO file](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html). Using usual tools, user can translate these files, very easily. Then the plugin will merge the translations into new _alternative_ content files, providing a translated website.
 
 ## Configuration
 

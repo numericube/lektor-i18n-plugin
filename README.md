@@ -104,13 +104,13 @@ Specificaly, we will need to call the `msginit` program distributed with recente
 
 Very straightforward :
 
-    $ lektor plugins add i18n
+    $ lektor plugins add lektor-i18n
 
 Verify installation with a simple :
 
-    $ lektor plugins add i18n
+    $ lektor plugins list
     ...
-    i18n (version 0.1)
+    lektor-i18n (version 0.1)
     ...
 
 ## Usage

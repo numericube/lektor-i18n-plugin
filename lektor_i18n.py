@@ -193,7 +193,7 @@ class I18NPlugin(Plugin):
                             else:
                                 is_content=True
                         if is_content:
-                            f.write("%s"%translator.gettext(line).encode('utf-8') )
+                            f.write("%s\n"%translator.gettext(stripped_line).encode('utf-8') )
 
 
     def on_after_build(self, builder, build_state, source, prog):

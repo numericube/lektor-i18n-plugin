@@ -197,7 +197,7 @@ class I18NPlugin(Plugin):
 
 
     def on_after_build(self, builder, build_state, source, prog):
-        if isinstance(source,Page):
+        if isinstance(source,Page) and source.alt == PRIMARY_ALT:
             try:
                 text = source.contents.as_text()
             except IOError:

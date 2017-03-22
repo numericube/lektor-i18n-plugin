@@ -11,12 +11,12 @@ The idea of this plugin is to capture the **sentences** from your **content**, a
 ### Configuration file
 
 `configs/i18n.ini`:
-    
+
     content = en
     translations = fr,es,it
     i18npath = i18n
 
-Where : 
+Where :
 
 * `content` is the language used to write `contents.lr` files (default is `en`)
 * `translations` is the list of target languages (you want to translate into).
@@ -42,7 +42,7 @@ in `flowblocks/*.ini` and/or `models/*.ini`, mark a field as translatable with :
     type = markdown
     translate = True
 
-Both `title` and `body` are now translatable. It means that during the parsing phase, all sentences from `title` or `body` fields from then `contents.lr` files with `Page` model will populate the collected PO file.
+Both `title` and `body` are now translatable. It means that during the parsing phase, all sentences from `title` or `body` fields from the `contents.lr` files with `Page` model will populate the collected PO file.
 
 Another flowblock example:
 
@@ -76,17 +76,17 @@ Here again, `body` and `title` will be translated. But `image` and `image_positi
 
 ### Non-english content
 
-Thanx to a limitation of msginit it's not so easy to translate a website with default language set to anything but english. 
+Thanx to a limitation of msginit it's not so easy to translate a website with default language set to anything but english.
 
 So if your default content language is not english, you will have to edit the first `contents-en.po` file and remove the translations (by hand ?)...
 
-## Installation 
+## Installation
 
 ### Prerequisites
 
 #### Lektor
 
-This plugin has been tested with `Lektor 1.2.x`.
+This plugin has been tested with `Lektor 2.3`.
 
 #### GetText
 
@@ -98,9 +98,9 @@ On OS X, use a decent package manager, like MacPort or Brew. With brew :
 
     sudo brew install gettext
 
-Specificaly, we will need to call the `msginit` program distributed with recente versions of gettext. 
+Specificaly, we will need to call the `msginit` program distributed with recent versions of gettext.
 
-### Installation 
+### Installation
 
 Very straightforward :
 
@@ -115,9 +115,9 @@ Verify installation with a simple :
 
 ## Usage
 
-The translation mechanism is hooked into the build system. So translating a website just means building the website. 
+The translation mechanism is hooked into the build system. So translating a website just means building the website.
 
-    $ lektor build 
+    $ lektor build
 
 On first call, a new `i18n` directory (can be changed in configuration file) will be created on top the lektor tree.
 
@@ -147,7 +147,7 @@ See [Lektor Documentation](https://www.getlektor.com/docs/content/alts/) for mor
 
 ## Support
 
-This plugin is provided as-is by [NumeriCube](http://numericube.com) a human-sized Paris-based company prodiving tailored services to smart customers. 
+This plugin is provided as-is by [NumeriCube](http://numericube.com) a human-sized Paris-based company prodiving tailored services to smart customers.
 
 We will be happy to try to help you with this plugin if need. Just file an issue on our [GitHub account](https://gihub.com/numericube/lektor-i18n-plugin/).
 

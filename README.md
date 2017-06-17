@@ -94,9 +94,9 @@ A recent vesion of GetText needs to be installed on the system. For a Debian/Ubu
 
     sudo apt-get install gettext
 
-On OS X, use a decent package manager, like MacPort or Brew. With brew :
+On macOS, use a decent package manager, like MacPorts or Homebrew. With Homebrew:
 
-    sudo brew install gettext
+    brew install gettext
 
 Specificaly, we will need to call the `msginit` program distributed with recent versions of gettext.
 

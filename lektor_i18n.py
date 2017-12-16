@@ -1,4 +1,22 @@
 # -*- coding: utf-8 -*-
+import sys
+
+PY3 = sys.version_info > (3,)
+
+from datetime import datetime
+import fnmatch, re
+import gettext
+from os.path import relpath, join, exists, dirname
+from os import walk, makedirs
+from pprint import PrettyPrinter
+import sys
+import tempfile
+import time
+if PY3:
+    from urllib.parse import urljoin
+else:
+    from urlparse import urljoin
+
 from lektor.pluginsystem import Plugin
 from lektor.db import Page
 from lektor.metaformat import tokenize
@@ -9,21 +27,26 @@ from lektor.environment import PRIMARY_ALT
 from lektor.filecontents import FileContents
 from lektor.context import get_ctx
 
-from pprint import PrettyPrinter
-from os.path import relpath, join, exists, dirname
-from os import walk, makedirs
-from datetime import datetime
-import time, gettext, urlparse
-import fnmatch, re
-import tempfile
 
 
 _command_re = re.compile(r'([a-zA-Z0-9.-_]+):')
 _block2_re = re.compile(r'^###(#+)\s*([^#]*?)\s*###(#+)\s*$') # derived from lektor.types.flow but allows more dash signs
 
+# python2/3 compatibility layer
+
+encode = lambda s: (s if PY3 else s.encode('UTF-8'))
+
+def trans(translator, s):
+    """Thin gettext translation wrapper to allow compatibility with both Python2
+    and 3."""
+    if PY3:
+        return translator.gettext(s)
+    else:
+        return translator.ugettext(s)
+
+
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
-
 POT_HEADER="""msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\\n"
@@ -71,7 +94,7 @@ class Translations(object):
 
     def write_pot(self, pot_filename, language):
         with open(pot_filename,'w') as f:
-            f.write(self.as_pot(language).encode("utf-8"))
+            f.write(encode(self.as_pot(language)))
 
     def merge_pot(self, from_filenames, to_filename):
         msgcat=locate_executable('msgcat')
@@ -146,6 +169,8 @@ def _line_is_dashes(line):
 
 
 
+
+
 class I18NPlugin(Plugin):
     name = u'i18n'
     description = u'Internationalisation helper'
@@ -161,7 +186,7 @@ class I18NPlugin(Plugin):
             return s
         else:
             translator = gettext.translation("contents", join(self.i18npath,'_compiled'), languages=[ctx.locale], fallback = True)
-            return translator.ugettext(s)#.encode('utf-8')
+            return trans(translator, s)
 
 
     def choose_language(self, l, language, fallback='en', attribute='language'):
@@ -214,7 +239,7 @@ class I18NPlugin(Plugin):
                         translations.add(
                             line,
                             "%s (%s:%s.%s)" % (
-                                urlparse.urljoin(self.url_prefix, source.url_path),
+                                urljoin(self.url_prefix, source.url_path),
                                 relpath(source.source_filename, root_path),
                                 zone, field.name)
                             )
@@ -241,7 +266,6 @@ class I18NPlugin(Plugin):
                 except IOError:
                     pass # next
             text = contents.as_text()
-            fields = source.datamodel.fields
             sections = list(tokenize(text.splitlines())) # ('sectionname',[list of section texts])
             flowblocks = source.pad.db.flowblocks
 
@@ -267,22 +291,23 @@ class I18NPlugin(Plugin):
                                     key,value=stripped_line.split(':',1)
                                     value=value.strip()
                                     if value:
-                                        f.write( "%s: %s\n" % ( key.encode('utf-8'), translator.ugettext(value).encode('utf-8')  ))
+                                        f.write("%s: %s\n" % (encode(key),
+                                            encode(trans(translator, value)) ))
                                     else:
-                                        f.write( "%s:\n" % key.encode('utf-8') )
+                                        f.write("%s:\n" % encode(key))
                             else:
                                 is_content=True
                         if is_content:
-                            translated_stripline = translator.ugettext(stripped_line) # trnanslate the stripped version
+                            translated_stripline = trans(translator, stripped_line) # trnanslate the stripped version
                             translation = line.replace(stripped_line, translated_stripline, 1) # and re-inject the stripped translation into original line (not stripped)
-                            f.write( "%s"%translation.encode('utf-8') )
+                            f.write("%s" % encode(translation))
 
 
     def on_after_build(self, builder, build_state, source, prog):
         if self.enabled and isinstance(source,Page):
             try:
                 text = source.contents.as_text()
-            except IOError, e:
+            except IOError:
                 pass
             else:
                 fields = source.datamodel.fields

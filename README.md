@@ -86,7 +86,7 @@ So if your default content language is not english, you will have to edit the fi
 
 #### Lektor
 
-This plugin has been tested with `Lektor 2.3`.
+This plugin has been tested with `Lektor 3..0.x`.
 
 #### GetText
 
@@ -98,7 +98,7 @@ On macOS, use a decent package manager, like MacPorts or Homebrew. With Homebrew
 
     brew install gettext
 
-Specificaly, we will need to call the `msginit` program distributed with recent versions of gettext.
+Specifically, we will need to call the `msginit` program distributed with recent versions of gettext.
 
 ### Installation
 

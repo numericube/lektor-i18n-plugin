@@ -30,7 +30,7 @@ from lektor.context import get_ctx
 
 
 
-_command_re = re.compile(r'([a-zA-Z0-9.-_]+):')
+command_re = re.compile(r'([a-zA-Z0-9.-_]+):\s*(.*?)?\s*$')
 # derived from lektor.types.flow but allows more dash signs
 block2re = re.compile(r'^###(#+)\s*([^#]*?)\s*###(#+)\s*$')
 
@@ -66,7 +66,7 @@ def trans(translator, s):
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
 
-class Translations(object):
+class Translations():
     """Memory of translations"""
 
     def __init__(self):
@@ -115,7 +115,7 @@ class Translations(object):
 
 translations = Translations() # let's have a singleton
 
-class POFile(object):
+class POFile():
 
     FILENAME_PATTERN = "contents+%s.po"
 
@@ -173,6 +173,10 @@ def line_is_dashes(line):
 
 
 
+def parse_paragraphs(document):
+    """Split a document string into paragraphs and return a list of strings,
+    each containing a paragraph."""
+    raise NotImplementedError()
 
 # We cannot check for unused arguments here, they're mandated by the plugin API.
 #pylint:disable=unused-argument
@@ -219,6 +223,9 @@ class I18NPlugin(Plugin):
 
         self.i18npath = self.get_config().get('i18npath', 'i18n')
         self.url_prefix = self.get_config().get('url_prefix', 'http://localhost/')
+        # whether or not to use a pargraph as smallest translatable unit
+        self.trans_parwise = self.get_config().get('translate_blockwise',
+                'false') in ('true','True','1')
 
         self.content_language=self.get_config().get('content', 'en')
         try:
@@ -237,13 +244,16 @@ class I18NPlugin(Plugin):
         fields to translations memory. Flow blocks are handled recursively."""
         for field in fields:
             if ('translate' in field.options) \
-            and (source.alt in (PRIMARY_ALT, self.content_language)) \
-            and (field.options['translate'] in ('True', 'true', '1', 1)):
+                    and (source.alt in (PRIMARY_ALT, self.content_language)) \
+                    and (field.options['translate'] in ('True', 'true', '1', 1)):
                 if field.name in sections.keys():
                     section = sections[field.name]
-                    for line in [x.strip() for x in section if x.strip()]:
-                        translations.add(
-                            line,
+                    # if blockwise, each paragraph is one translatable message,
+                    # otherwise each line
+                    chunks = (parse_paragraphs(section) if self.trans_parwise
+                            else [x.strip() for x in section if x.strip()])
+                    for chunk in chunks:
+                        translations.add(chunk,
                             "%s (%s:%s.%s)" % (
                                 urljoin(self.url_prefix, source.url_path),
                                 relpath(source.source_filename, root_path),
@@ -270,45 +280,71 @@ class I18NPlugin(Plugin):
                     contents=FileContents(fn)
                 except IOError:
                     pass # next
-            #text = contents.as_text()
-            #sections = list(tokenize(text.splitlines())) # ('sectionname',[list of section texts])
-            #flowblocks = source.pad.db.flowblocks
 
             for language in self.translations_languages:
                 translator = gettext.translation("contents",
                         join(self.i18npath,'_compiled'), languages=[language], fallback = True)
-                translated_filename=join(dirname(source.source_filename), "contents+%s.lr"%language)
+                translated_filename = join(dirname(source.source_filename),
+                        "contents+%s.lr"%language)
+                chunks = self.__parse_source_structure(
+                        contents.open(encoding='utf-8').readlines())
                 with open(translated_filename,"w") as f:
-                    count_lines_block = 0 # counting the number of lines of the current block
-                    is_content = False
-                    for line in contents.open(encoding='utf-8').readlines():#text.splitlines():
-                        stripped_line = line.strip()
-                        if not stripped_line: # empty line
-                            f.write('\n')
-                            continue
-                        # line like "---*" or a new block tag
-                        if line_is_dashes(stripped_line) or \
-                                block2re.search(stripped_line):
-                            count_lines_block=0
-                            is_content = False
-                            f.write("%s"%line)
-                        else:
-                            count_lines_block+=1
-                            if count_lines_block==1 and not is_content: # handle first line, while not in content
-                                if _command_re.match(stripped_line):
-                                    key,value=stripped_line.split(':',1)
-                                    value=value.strip()
-                                    if value:
-                                        f.write("%s: %s\n" % (encode(key),
-                                            encode(trans(translator, value)) ))
-                                    else:
-                                        f.write("%s:\n" % encode(key))
-                            else:
-                                is_content=True
-                        if is_content:
-                            translated_stripline = trans(translator, stripped_line) # trnanslate the stripped version
-                            translation = line.replace(stripped_line, translated_stripline, 1) # and re-inject the stripped translation into original line (not stripped)
-                            f.write("%s" % encode(translation))
+                    if self.trans_parwise:
+                        f.write(self.__trans_parwise(chunks, translator))
+                    else:
+                        f.write(self.__trans_linewise(chunks, translator))
+
+    def __parse_source_structure(self, lines):
+        """Apply translations line-by-line from source."""
+        # two possible keys: 'raw': a_line or 'translatable': a_line
+        blocks = []
+        count_lines_block = 0 # counting the number of lines of the current block
+        is_content = False
+        for line in lines:
+            stripped_line = line.strip()
+            if not stripped_line: # empty line
+                blocks.append(('raw', '\n'))
+                continue
+            # line like "---*" or a new block tag
+            if line_is_dashes(stripped_line) or block2re.search(stripped_line):
+                count_lines_block=0
+                is_content = False
+                blocks.append(('raw', line))
+            else:
+                count_lines_block+=1
+                if count_lines_block==1 and not is_content: # handle first line, while not in content
+                    match = command_re.search(stripped_line)
+                    if match:
+                        key, value = match.groups()
+                        blocks.append(('raw', encode(key) + ':'))
+                        if value:
+                            blocks.append(('raw', ' '))
+                            blocks.append(('translatable', encode(value)))
+                        blocks.append(('raw', '\n'))
+                else:
+                    is_content=True
+            if is_content:
+                blocks.append(('translatable', line))
+        return blocks
+
+    def __trans_linewise(self, chunks, translator):
+        result = []
+        for type, content in chunks:
+            if type == 'raw':
+                result.append(content)
+            elif type == 'translatable':
+                content_stripped = content.strip()
+                trans_stripline = trans(translator, content_stripped) # trnanslate the stripped version
+                # and re-inject the stripped translation into original line (not stripped)
+                result.append(content.replace(content_stripped,
+                        trans_stripline, 1))
+            else:
+                raise RuntimeError("Unknown chunk type detected, this is a bug")
+        return ''.join(result)
+
+
+    def __trans_parwise(self, _lines, _translator):
+        raise NotImplementedError("implementation missing")
 
 
     def on_after_build(self, builder, build_state, source, prog):

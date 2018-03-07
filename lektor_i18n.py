@@ -4,7 +4,8 @@ import sys
 
 PY3 = sys.version_info > (3,)
 
-from datetime import datetime
+import collections
+import datetime
 import gettext
 import os
 from os.path import relpath, join, exists, dirname
@@ -33,6 +34,22 @@ _command_re = re.compile(r'([a-zA-Z0-9.-_]+):')
 # derived from lektor.types.flow but allows more dash signs
 block2re = re.compile(r'^###(#+)\s*([^#]*?)\s*###(#+)\s*$')
 
+POT_HEADER = """msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\\n"
+"Report-Msgid-Bugs-To: \\n"
+"POT-Creation-Date: %(NOW)s\\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
+"Language-Team: %(LANGUAGE)s <LL@li.org>\\n"
+"Language: %(LANGUAGE)s\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=UTF-8\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+
+"""
+
+
 # python2/3 compatibility layer
 
 encode = lambda s: (s if PY3 else s.encode('UTF-8'))
@@ -48,44 +65,29 @@ def trans(translator, s):
 
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
-POT_HEADER="""msgid ""
-msgstr ""
-"Project-Id-Version: PACKAGE VERSION\\n"
-"Report-Msgid-Bugs-To: \\n"
-"POT-Creation-Date: %(NOW)s\\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
-"Language-Team: %(LANGUAGE)s <LL@li.org>\\n"
-"Language: %(LANGUAGE)s\\n"
-"MIME-Version: 1.0\\n"
-"Content-Type: text/plain; charset=UTF-8\\n"
-"Content-Transfer-Encoding: 8bit\\n"
-
-"""
 
 class Translations(object):
     """Memory of translations"""
 
     def __init__(self):
-        self.translations={} # dict like {'text' : ['source1', 'source2',...],}
+        # dict like {'text' : ['source1', 'source2',...],}
+        self.translations = collections.OrderedDict()
 
     def add(self, text, source):
-
         if not text in self.translations.keys():
             self.translations[text]=[]
             reporter.report_debug_info('added to translation memory : ', truncate(text))
         if not source in self.translations[text]:
             self.translations[text].append(source)
-            # reporter.report_debug_info('adding source "%s" to "%s" translation memory'%(source, truncate(text)))
 
     def __repr__(self):
         return PrettyPrinter(2).pformat(self.translations)
 
     def as_pot(self, content_language):
         """returns a POT version of the translation dictionnary"""
-        NOW=datetime.now().strftime('%Y-%m-%d %H:%M')
-        NOW+='+%s'%(time.tzname[0])
-        result=POT_HEADER % {  'LANGUAGE' : content_language, 'NOW' : NOW}
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+        now += '+%s'%(time.tzname[0])
+        result=POT_HEADER % {'LANGUAGE' : content_language, 'NOW' : now}
 
         for s, paths in self.translations.items():
             result+="#: %s\n"%" ".join(paths)

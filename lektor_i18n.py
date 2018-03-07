@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
+#pylint: disable=wrong-import-position
 import sys
 
 PY3 = sys.version_info > (3,)
 
 from datetime import datetime
-import fnmatch, re
 import gettext
+import os
 from os.path import relpath, join, exists, dirname
-from os import walk, makedirs
 from pprint import PrettyPrinter
-import sys
+import re
 import tempfile
 import time
 if PY3:
@@ -21,7 +21,7 @@ from lektor.pluginsystem import Plugin
 from lektor.db import Page
 from lektor.metaformat import tokenize
 from lektor.reporter import reporter
-from lektor.types.flow import FlowType, process_flowblock_data, discover_relevant_flowblock_models
+from lektor.types.flow import FlowType, process_flowblock_data
 from lektor.utils import portable_popen, locate_executable
 from lektor.environment import PRIMARY_ALT
 from lektor.filecontents import FileContents
@@ -30,7 +30,8 @@ from lektor.context import get_ctx
 
 
 _command_re = re.compile(r'([a-zA-Z0-9.-_]+):')
-_block2_re = re.compile(r'^###(#+)\s*([^#]*?)\s*###(#+)\s*$') # derived from lektor.types.flow but allows more dash signs
+# derived from lektor.types.flow but allows more dash signs
+block2re = re.compile(r'^###(#+)\s*([^#]*?)\s*###(#+)\s*$')
 
 # python2/3 compatibility layer
 
@@ -141,12 +142,12 @@ class POFile(object):
 
     def _prepare_locale_dir(self):
         """Prepares the i18n/<language>/LC_MESSAGES/ to store the .mo file ; returns the dirname"""
-        dirname = join('_compiled',self.language, "LC_MESSAGES")
+        directory = join('_compiled',self.language, "LC_MESSAGES")
         try:
-            makedirs(join(self.i18npath,dirname))
+            os.makedirs(join(self.i18npath, directory))
         except OSError:
             pass # already exists, no big deal
-        return dirname
+        return directory
 
     def _msg_fmt(self, locale_dirname):
         """Compile an existing <language>.po file into a .mo file"""
@@ -163,7 +164,7 @@ class POFile(object):
         locale_dirname=self._prepare_locale_dir()
         self._msg_fmt(locale_dirname)
 
-def _line_is_dashes(line):
+def line_is_dashes(line):
     line = line.strip()
     return line == u'-' * len(line) and len(line) >= 3
 
@@ -171,14 +172,16 @@ def _line_is_dashes(line):
 
 
 
+# We cannot check for unused arguments here, they're mandated by the plugin API.
+#pylint:disable=unused-argument
 class I18NPlugin(Plugin):
     name = u'i18n'
     description = u'Internationalisation helper'
 
     def translate_tag(self, s, *args, **kwargs):
-        s=s.strip()
         if not self.enabled:
-            return s
+            return s # no operation
+        s = s.strip()
         ctx = get_ctx()
         if self.content_language==ctx.locale:
             translations.add(s,'(dynamic)')
@@ -204,6 +207,7 @@ class I18NPlugin(Plugin):
                 return item
         return None
 
+    #pylint: disable=attribute-defined-outside-init
     def on_setup_env(self):
         """Setup `env` for the plugin"""
         # Read configuration
@@ -257,7 +261,6 @@ class I18NPlugin(Plugin):
     def on_before_build(self, builder, build_state, source, prog):
         """Before building a page, eventualy produce all its alternatives (=translated pages)
         using the gettext translations available."""
-        # if isinstance(source,Page) and source.alt==PRIMARY_ALT:
         if self.enabled and isinstance(source,Page) and source.alt in (PRIMARY_ALT, self.content_language):
             contents = None
             for fn in source.iter_source_filenames():
@@ -265,12 +268,13 @@ class I18NPlugin(Plugin):
                     contents=FileContents(fn)
                 except IOError:
                     pass # next
-            text = contents.as_text()
-            sections = list(tokenize(text.splitlines())) # ('sectionname',[list of section texts])
-            flowblocks = source.pad.db.flowblocks
+            #text = contents.as_text()
+            #sections = list(tokenize(text.splitlines())) # ('sectionname',[list of section texts])
+            #flowblocks = source.pad.db.flowblocks
 
             for language in self.translations_languages:
-                translator = gettext.translation("contents", join(self.i18npath,'_compiled'), languages=[language], fallback = True)
+                translator = gettext.translation("contents",
+                        join(self.i18npath,'_compiled'), languages=[language], fallback = True)
                 translated_filename=join(dirname(source.source_filename), "contents+%s.lr"%language)
                 with open(translated_filename,"w") as f:
                     count_lines_block = 0 # counting the number of lines of the current block
@@ -280,7 +284,9 @@ class I18NPlugin(Plugin):
                         if not stripped_line: # empty line
                             f.write('\n')
                             continue
-                        if _line_is_dashes(stripped_line) or _block2_re.match(stripped_line): # line like "---*" or a new block tag
+                        # line like "---*" or a new block tag
+                        if line_is_dashes(stripped_line) or \
+                                block2re.search(stripped_line):
                             count_lines_block=0
                             is_content = False
                             f.write("%s"%line)
@@ -319,7 +325,8 @@ class I18NPlugin(Plugin):
         if self.enabled:
             reporter.report_generic("i18n activated, with main language %s"% self.content_language )
             templates_pot_filename = join(tempfile.gettempdir(), 'templates.pot')
-            reporter.report_generic("Parsing templates for i18n into %s"% relpath(templates_pot_filename,builder.env.root_path) )
+            reporter.report_generic("Parsing templates for i18n into %s" \
+                    % relpath(templates_pot_filename, builder.env.root_path))
             translations.parse_templates(templates_pot_filename)
 
 
@@ -331,10 +338,13 @@ class I18NPlugin(Plugin):
             contents_pot_filename = join(builder.env.root_path, self.i18npath, 'contents.pot')
             templates_pot_filename = join(tempfile.gettempdir(), 'templates.pot')
             translations.write_pot(contents_pot_filename, self.content_language)
-            reporter.report_generic("%s generated"%relpath(contents_pot_filename, builder.env.root_path))
+            reporter.report_generic("%s generated" % \
+                    relpath(contents_pot_filename, builder.env.root_path))
             if exists(templates_pot_filename):
                 translations.merge_pot([contents_pot_filename, templates_pot_filename], contents_pot_filename)
-                reporter.report_generic("%s merged into %s"% (relpath(templates_pot_filename,builder.env.root_path),relpath(contents_pot_filename,builder.env.root_path)) )
+                reporter.report_generic("%s merged into %s" % \
+                        (relpath(templates_pot_filename, builder.env.root_path),
+                            relpath(contents_pot_filename,builder.env.root_path)))
 
 
             for language in self.translations_languages:

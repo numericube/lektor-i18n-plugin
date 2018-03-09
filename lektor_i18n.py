@@ -407,21 +407,24 @@ class I18NPlugin(Plugin):
         """Once the build process is over :
         - write the translation template `contents.pot` on the filesystem,
         - write all translation contents+<language>.po files """
-        if self.enabled:
-            contents_pot_filename = join(builder.env.root_path, self.i18npath, 'contents.pot')
-            templates_pot_filename = join(tempfile.gettempdir(), 'templates.pot')
-            translations.write_pot(contents_pot_filename, self.content_language)
-            reporter.report_generic("%s generated" % \
-                    relpath(contents_pot_filename, builder.env.root_path))
-            if exists(templates_pot_filename):
-                translations.merge_pot([contents_pot_filename, templates_pot_filename], contents_pot_filename)
-                reporter.report_generic("%s merged into %s" % \
-                        (relpath(templates_pot_filename, builder.env.root_path),
-                            relpath(contents_pot_filename,builder.env.root_path)))
+        if not self.enabled:
+            return
+        contents_pot_filename = join(builder.env.root_path, self.i18npath, 'contents.pot')
+        pots = [contents_pot_filename,
+                join(tempfile.gettempdir(), 'templates.pot'),
+                join(builder.env.root_path, self.i18npath, 'plugins.pot')]
+        # write out contents.pot from web site contents
+        translations.write_pot(pots[0], self.content_language)
+        reporter.report_generic("%s generated" % relpath(pots[0],
+            builder.env.root_path))
+        pots = [p for p in pots if os.path.exists(p) ] # only keep existing ones
+        if len(pots) > 1:
+            translations.merge_pot(pots, contents_pot_filename)
+            reporter.report_generic("Merged POT files %s" % ', '.join(
+                relpath(p, builder.env.root_path) for p in pots))
 
-
-            for language in self.translations_languages:
-                po_file=POFile(language, self.i18npath)
-                po_file.generate()
+        for language in self.translations_languages:
+            po_file=POFile(language, self.i18npath)
+            po_file.generate()
 
 

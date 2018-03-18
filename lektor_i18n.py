@@ -223,22 +223,6 @@ class I18NPlugin(Plugin):
     name = u'i18n'
     description = u'Internationalisation helper'
 
-    # ToDo: what is this function for
-    def choose_language(self, l, language, fallback='en', attribute='language'):
-        """Will return from list 'l' the element with attribute 'attribute' set to given 'language'.
-        If none is found, will try to return element with attribute 'attribute' set to given 'fallback'.
-        Else returns None."""
-        language=language.strip().lower()
-        fallback=fallback.strip().lower()
-        for item in l:
-            if item[attribute].strip().lower()==language:
-                return item
-        # fallback
-        for item in l:
-            if item[attribute].strip().lower()==fallback:
-                return item
-        return None
-
     #pylint: disable=attribute-defined-outside-init
     def on_setup_env(self):
         """Setup `env` for the plugin"""
@@ -264,7 +248,6 @@ class I18NPlugin(Plugin):
 
         if not self.content_language in self.translations_languages:
             self.translations_languages.append(self.content_language)
-        #self.env.jinja_env.globals['choose_language'] = self.choose_language
 
     def process_node(self, fields, sections, source, zone, root_path):
         """For a give node (), identify all fields to translate, and add new

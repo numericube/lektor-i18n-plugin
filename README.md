@@ -4,13 +4,13 @@ This plugin enables a smarter way to translate a [Lektor](http://getlektor.com) 
 
 ## Principles
 
-The idea of this plugin is to capture the **sentences** from your **content**, and populate a standard *Gettext* [PO file](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html). Using usual tools, user can translate these files, very easily. Then the plugin will merge the translations into new [_alternative_](https://www.getlektor.com/docs/content/alts/) content files, providing a translated website.
+The idea of this plugin is to capture the **sentences** or **paragraphs** from your **content** and **templates**, and populate a standard *Gettext* [PO file](https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html). Using usual tools, user can translate these files, very easily. Then the plugin will merge the translations into new [_alternative_](https://www.getlektor.com/docs/content/alts/) content files, providing a translated website.
 
 ## Configuration
 
 ### Configuration file
 
-`configs/i18n.ini`:
+#### `configs/i18n.ini`
 
     content = en
     translations = fr,es,it
@@ -24,9 +24,18 @@ Where :
 * `i18npath` is the directory where translation files will be produced/stored (default is `i18n`). This directory needs to be relative to root path.
 * `translate_paragraphwise` specifies whether translation strings are created per line or per paragraph. The latter is helpful for documents wrapping texts at 80 character boundaries. It is set to `False` by default.
 
+#### `babel.cfg`
+
+If you plan to localise your templates as well, you can use
+`{{ _("some string") }}` in your templates. To make this work, pybabel should be installed (pip install pybabel; maybe pip3). A `babel.cfg` also has to exist in your project root with this content:
+
+    [jinja2: **/templates/**.html]
+    encoding = utf-8
+    extensions=jinja2.ext.autoescape,jinja2.ext.with_
+
 ### Translatable fields
 
-In order for a field to be marked a translatable, an option has to be set in the field definition. Both blocks and flowblocks fields are subjects to translations.
+In order for a field to be marked as translatable, an option has to be set in the field definition. Both blocks and flowblocks fields are subjects to translations.
 
 in `flowblocks/*.ini` and/or `models/*.ini`, mark a field as translatable with :
 

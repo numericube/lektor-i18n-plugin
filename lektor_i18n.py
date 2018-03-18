@@ -66,6 +66,34 @@ def trans(translator, s):
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
 
+#pylint: disable=too-few-public-methods,redefined-variable-type
+class TemplateTranslator():
+    def __init__(self, i18npath):
+        self.i18npath = i18npath
+        self.__lastlang = None
+        self.translator = None
+        self.init_translator()
+
+    def init_translator(self):
+        ctx = get_ctx()
+        if not ctx:
+            self.translator = gettext.GNUTranslations()
+            return super().__init__()
+        if not self.__lastlang == ctx.locale:
+            self.__lastlang = ctx.locale
+            self.translator = gettext.translation("contents",
+                    join(self.i18npath, '_compiled'),
+                    languages=[ctx.locale], fallback=True)
+
+    def gettext(self, x):
+        self.init_translator() # lagnuage could have changed
+        return self.translator.gettext(x)
+
+    def ngettext(self, *x):
+        self.init_translator()
+        return self.translator.ngettext(*x)
+
+
 class Translations():
     """Memory of translations"""
 
@@ -195,20 +223,7 @@ class I18NPlugin(Plugin):
     name = u'i18n'
     description = u'Internationalisation helper'
 
-    def translate_tag(self, s, *args, **kwargs):
-        if not self.enabled:
-            return s # no operation
-        s = s.strip()
-        ctx = get_ctx()
-        if self.content_language==ctx.locale:
-            translations.add(s,'(dynamic)')
-            reporter.report_debug_info('added to translation memory (dynamic): ', truncate(s))
-            return s
-        else:
-            translator = gettext.translation("contents", join(self.i18npath,'_compiled'), languages=[ctx.locale], fallback = True)
-            return trans(translator, s)
-
-
+    # ToDo: what is this function for
     def choose_language(self, l, language, fallback='en', attribute='language'):
         """Will return from list 'l' the element with attribute 'attribute' set to given 'language'.
         If none is found, will try to return element with attribute 'attribute' set to given 'fallback'.
@@ -238,6 +253,10 @@ class I18NPlugin(Plugin):
         self.trans_parwise = self.get_config().get('translate_paragraphwise',
                 'false') in ('true','True','1')
         self.content_language=self.get_config().get('content', 'en')
+        self.env.jinja_env.add_extension('jinja2.ext.i18n')
+        self.env.jinja_env.policies['ext.i18n.trimmed'] = True # do a .strip()
+        self.env.jinja_env.install_gettext_translations(TemplateTranslator(self.i18npath))
+        # ToDo: is this stil required
         try:
             self.translations_languages=self.get_config().get('translations').replace(' ','').split(',')
         except AttributeError:
@@ -245,9 +264,7 @@ class I18NPlugin(Plugin):
 
         if not self.content_language in self.translations_languages:
             self.translations_languages.append(self.content_language)
-        self.env.jinja_env.filters['translate'] = self.translate_tag
-        self.env.jinja_env.globals['_'] = self.translate_tag
-        self.env.jinja_env.globals['choose_language'] = self.choose_language
+        #self.env.jinja_env.globals['choose_language'] = self.choose_language
 
     def process_node(self, fields, sections, source, zone, root_path):
         """For a give node (), identify all fields to translate, and add new

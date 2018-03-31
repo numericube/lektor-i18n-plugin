@@ -342,8 +342,8 @@ class I18NPlugin(Plugin):
                         join(self.i18npath,'_compiled'), languages=[language], fallback = True)
                 translated_filename = join(dirname(source.source_filename),
                         "contents+%s.lr"%language)
-                chunks = self.__parse_source_structure(
-                        contents.open(encoding='utf-8').readlines())
+                with contents.open(encoding='utf-8') as file:
+                    chunks = self.__parse_source_structure(file.readlines())
                 with open(translated_filename,"w") as f:
                     for type, content in chunks: # see __parse_source_structure
                         if type == 'raw':

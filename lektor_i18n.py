@@ -180,7 +180,7 @@ def line_is_dashes(line):
 def split_paragraphs(document):
     if isinstance(document, (list, tuple)):
         document = ''.join(document) # list of lines
-    return re.split('\n(?:\s*\n){1,}', document)
+    return re.split('\n(?:\\s*\n){1,}', document)
 
 # We cannot check for unused arguments here, they're mandated by the plugin API.
 #pylint:disable=unused-argument
@@ -256,7 +256,7 @@ class I18NPlugin(Plugin):
                     chunks = (split_paragraphs(section) if self.trans_parwise
                             else [x.strip() for x in section if x.strip()])
                     for chunk in chunks:
-                        translations.add(chunk,
+                        translations.add(chunk.strip(),
                             "%s (%s:%s.%s)" % (
                                 urljoin(self.url_prefix, source.url_path),
                                 relpath(source.source_filename, root_path),

@@ -256,7 +256,7 @@ class I18NPlugin(Plugin):
                     chunks = (split_paragraphs(section) if self.trans_parwise
                             else [x.strip() for x in section if x.strip()])
                     for chunk in chunks:
-                        translations.add(chunk.strip(),
+                        translations.add(chunk.strip('\r\n'),
                             "%s (%s:%s.%s)" % (
                                 urljoin(self.url_prefix, source.url_path),
                                 relpath(source.source_filename, root_path),
@@ -365,7 +365,7 @@ class I18NPlugin(Plugin):
         block and re-inject result."""
         result = []
         for paragraph in split_paragraphs(content):
-            stripped = paragraph.strip('\n')
+            stripped = paragraph.strip('\n\r')
             paragraph = paragraph.replace(stripped, trans(translator,
                     stripped))
             result.append(paragraph)

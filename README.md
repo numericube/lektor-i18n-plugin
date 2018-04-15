@@ -15,12 +15,14 @@ The idea of this plugin is to capture the **sentences** from your **content**, a
     content = en
     translations = fr,es,it
     i18npath = i18n
+    translate_paragraphwise = False
 
 Where :
 
 * `content` is the language used to write `contents.lr` files (default is `en`)
 * `translations` is the list of target languages (you want to translate into).
 * `i18npath` is the directory where translation files will be produced/stored (default is `i18n`). This directory needs to be relative to root path.
+* `translate_paragraphwise` specifies whether translation strings are created per line or per paragraph. The latter is helpful for documents wrapping texts at 80 character boundaries. It is set to `False` by default.
 
 ### Translatable fields
 
@@ -90,15 +92,17 @@ This plugin has been tested with `Lektor 3..0.x`.
 
 #### GetText
 
-A recent vesion of GetText needs to be installed on the system. For a Debian/Ubuntu system, this means a simple :
+Both Gettext and Pybabel are required.  For a Debian/Ubuntu system, this means a simple :
 
-    sudo apt-get install gettext
+    sudo apt-get install gettext python3-babel
 
 On macOS, use a decent package manager, like MacPorts or Homebrew. With Homebrew:
 
     brew install gettext
 
-Specifically, we will need to call the `msginit` program distributed with recent versions of gettext.
+and then pip to fetch pybabel:
+
+    pip install babel
 
 ### Installation
 

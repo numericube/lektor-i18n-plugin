@@ -66,6 +66,34 @@ def trans(translator, s):
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
 
+#pylint: disable=too-few-public-methods,redefined-variable-type
+class TemplateTranslator():
+    def __init__(self, i18npath):
+        self.i18npath = i18npath
+        self.__lastlang = None
+        self.translator = None
+        self.init_translator()
+
+    def init_translator(self):
+        ctx = get_ctx()
+        if not ctx:
+            self.translator = gettext.GNUTranslations()
+            return super().__init__()
+        if not self.__lastlang == ctx.locale:
+            self.__lastlang = ctx.locale
+            self.translator = gettext.translation("contents",
+                    join(self.i18npath, '_compiled'),
+                    languages=[ctx.locale], fallback=True)
+
+    def gettext(self, x):
+        self.init_translator() # lagnuage could have changed
+        return self.translator.gettext(x)
+
+    def ngettext(self, *x):
+        self.init_translator()
+        return self.translator.ngettext(*x)
+
+
 class Translations():
     """Memory of translations"""
 
@@ -195,35 +223,6 @@ class I18NPlugin(Plugin):
     name = u'i18n'
     description = u'Internationalisation helper'
 
-    def translate_tag(self, s, *args, **kwargs):
-        if not self.enabled:
-            return s # no operation
-        s = s.strip()
-        ctx = get_ctx()
-        if self.content_language==ctx.locale:
-            translations.add(s,'(dynamic)')
-            reporter.report_debug_info('added to translation memory (dynamic): ', truncate(s))
-            return s
-        else:
-            translator = gettext.translation("contents", join(self.i18npath,'_compiled'), languages=[ctx.locale], fallback = True)
-            return trans(translator, s)
-
-
-    def choose_language(self, l, language, fallback='en', attribute='language'):
-        """Will return from list 'l' the element with attribute 'attribute' set to given 'language'.
-        If none is found, will try to return element with attribute 'attribute' set to given 'fallback'.
-        Else returns None."""
-        language=language.strip().lower()
-        fallback=fallback.strip().lower()
-        for item in l:
-            if item[attribute].strip().lower()==language:
-                return item
-        # fallback
-        for item in l:
-            if item[attribute].strip().lower()==fallback:
-                return item
-        return None
-
     #pylint: disable=attribute-defined-outside-init
     def on_setup_env(self):
         """Setup `env` for the plugin"""
@@ -238,6 +237,10 @@ class I18NPlugin(Plugin):
         self.trans_parwise = self.get_config().get('translate_paragraphwise',
                 'false') in ('true','True','1')
         self.content_language=self.get_config().get('content', 'en')
+        self.env.jinja_env.add_extension('jinja2.ext.i18n')
+        self.env.jinja_env.policies['ext.i18n.trimmed'] = True # do a .strip()
+        self.env.jinja_env.install_gettext_translations(TemplateTranslator(self.i18npath))
+        # ToDo: is this stil required
         try:
             self.translations_languages=self.get_config().get('translations').replace(' ','').split(',')
         except AttributeError:
@@ -245,9 +248,6 @@ class I18NPlugin(Plugin):
 
         if not self.content_language in self.translations_languages:
             self.translations_languages.append(self.content_language)
-        self.env.jinja_env.filters['translate'] = self.translate_tag
-        self.env.jinja_env.globals['_'] = self.translate_tag
-        self.env.jinja_env.globals['choose_language'] = self.choose_language
 
     def process_node(self, fields, sections, source, zone, root_path):
         """For a give node (), identify all fields to translate, and add new
@@ -342,8 +342,8 @@ class I18NPlugin(Plugin):
                         join(self.i18npath,'_compiled'), languages=[language], fallback = True)
                 translated_filename = join(dirname(source.source_filename),
                         "contents+%s.lr"%language)
-                chunks = self.__parse_source_structure(
-                        contents.open(encoding='utf-8').readlines())
+                with contents.open(encoding='utf-8') as file:
+                    chunks = self.__parse_source_structure(file.readlines())
                 with open(translated_filename,"w") as f:
                     for type, content in chunks: # see __parse_source_structure
                         if type == 'raw':
@@ -407,21 +407,24 @@ class I18NPlugin(Plugin):
         """Once the build process is over :
         - write the translation template `contents.pot` on the filesystem,
         - write all translation contents+<language>.po files """
-        if self.enabled:
-            contents_pot_filename = join(builder.env.root_path, self.i18npath, 'contents.pot')
-            templates_pot_filename = join(tempfile.gettempdir(), 'templates.pot')
-            translations.write_pot(contents_pot_filename, self.content_language)
-            reporter.report_generic("%s generated" % \
-                    relpath(contents_pot_filename, builder.env.root_path))
-            if exists(templates_pot_filename):
-                translations.merge_pot([contents_pot_filename, templates_pot_filename], contents_pot_filename)
-                reporter.report_generic("%s merged into %s" % \
-                        (relpath(templates_pot_filename, builder.env.root_path),
-                            relpath(contents_pot_filename,builder.env.root_path)))
+        if not self.enabled:
+            return
+        contents_pot_filename = join(builder.env.root_path, self.i18npath, 'contents.pot')
+        pots = [contents_pot_filename,
+                join(tempfile.gettempdir(), 'templates.pot'),
+                join(builder.env.root_path, self.i18npath, 'plugins.pot')]
+        # write out contents.pot from web site contents
+        translations.write_pot(pots[0], self.content_language)
+        reporter.report_generic("%s generated" % relpath(pots[0],
+            builder.env.root_path))
+        pots = [p for p in pots if os.path.exists(p) ] # only keep existing ones
+        if len(pots) > 1:
+            translations.merge_pot(pots, contents_pot_filename)
+            reporter.report_generic("Merged POT files %s" % ', '.join(
+                relpath(p, builder.env.root_path) for p in pots))
 
-
-            for language in self.translations_languages:
-                po_file=POFile(language, self.i18npath)
-                po_file.generate()
+        for language in self.translations_languages:
+            po_file=POFile(language, self.i18npath)
+            po_file.generate()
 
 

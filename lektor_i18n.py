@@ -119,7 +119,7 @@ class Translations():
 
         for msg, paths in self.translations.items():
             result += "#: %s\n"%" ".join(paths)
-            for token, repl in {'\n': '\\n', '\t': '\\t', '"': '\\"'}.items():
+            for token, repl in {'\\': '\\\\', '\n': '\\n', '\t': '\\t', '"': '\\"'}.items():
                 msg = msg.replace(token, repl)
             result+='msgid "%s"\n' % msg
             result+='msgstr ""\n\n'

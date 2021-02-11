@@ -271,7 +271,7 @@ class I18NPlugin(Plugin):
                             )
 
             if isinstance(field.type, FlowType):
-                if sections.has_key(field.name):
+                if field.name in sections:
                     section = sections[field.name]
                     for blockname, blockvalue in process_flowblock_data("".join(section)):
                         flowblockmodel = source.pad.db.flowblocks[blockname]

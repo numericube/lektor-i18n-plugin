@@ -67,7 +67,7 @@ def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
 
 #pylint: disable=too-few-public-methods,redefined-variable-type
-class TemplateTranslator():
+class TemplateTranslator(object):
     def __init__(self, i18npath):
         self.i18npath = i18npath
         self.__lastlang = None

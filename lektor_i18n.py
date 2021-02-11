@@ -78,7 +78,7 @@ class TemplateTranslator():
         ctx = get_ctx()
         if not ctx:
             self.translator = gettext.GNUTranslations()
-            return super().__init__()
+            return super(TemplateTranslator, self).__init__()
         if not self.__lastlang == ctx.locale:
             self.__lastlang = ctx.locale
             self.translator = gettext.translation("contents",
@@ -224,7 +224,7 @@ class I18NPlugin(Plugin):
     description = u'Internationalisation helper'
 
     #pylint: disable=attribute-defined-outside-init
-    def on_setup_env(self):
+    def on_setup_env(self, **extra):
         """Setup `env` for the plugin"""
         # Read configuration
         self.enabled = self.get_config().get('enable', 'true') in ('true','True','1')

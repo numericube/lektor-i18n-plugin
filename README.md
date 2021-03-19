@@ -16,6 +16,8 @@ The idea of this plugin is to capture the **sentences** or **paragraphs** from y
     translations = fr,es,it
     i18npath = i18n
     translate_paragraphwise = False
+    url_prefix = https://website_url/
+
 
 Where :
 
@@ -23,6 +25,7 @@ Where :
 * `translations` is the list of target languages (you want to translate into).
 * `i18npath` is the directory where translation files will be produced/stored (default is `i18n`). This directory needs to be relative to root path.
 * `translate_paragraphwise` specifies whether translation strings are created per line or per paragraph. The latter is helpful for documents wrapping texts at 80 character boundaries. It is set to `False` by default.
+* `url_prefix` is the final url of your lektor website. This provides translators with a way to see the strings in context.
 
 #### `babel.cfg`
 

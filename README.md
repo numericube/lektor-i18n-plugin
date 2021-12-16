@@ -27,7 +27,7 @@ Where :
 #### `babel.cfg`
 
 If you plan to localise your templates as well, you can use
-`{{ _("some string") }}` in your templates. To make this work, pybabel should be installed (pip install pybabel; maybe pip3). A `babel.cfg` also has to exist in your project root with this content:
+`{{ _("some string") }}` in your templates. To make this work, babel for Python should be installed (pip install babel; maybe pip3). A `babel.cfg` also has to exist in your project root with this content:
 
     [jinja2: **/templates/**.html]
     encoding = utf-8

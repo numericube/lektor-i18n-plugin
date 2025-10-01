@@ -13,26 +13,21 @@ from pprint import PrettyPrinter
 import re
 import tempfile
 import time
+import copy
 if PY3:
     from urllib.parse import urljoin
 else:
     from urlparse import urljoin
 
 from lektor.pluginsystem import Plugin
+from lektor.datamodel import load_flowblocks
 from lektor.db import Page
-from lektor.metaformat import tokenize
+from lektor.metaformat import serialize, tokenize
 from lektor.reporter import reporter
 from lektor.types.flow import FlowType, process_flowblock_data
 from lektor.utils import portable_popen, locate_executable
 from lektor.environment import PRIMARY_ALT
-from lektor.filecontents import FileContents
 from lektor.context import get_ctx
-
-
-
-command_re = re.compile(r'([a-zA-Z0-9.-_]+):\s*(.*?)?\s*$')
-# derived from lektor.types.flow but allows more dash signs
-block2re = re.compile(r'^###(#+)\s*([^#]*?)\s*###(#+)\s*$')
 
 POT_HEADER = """msgid ""
 msgstr ""
@@ -126,8 +121,8 @@ class Translations():
         return result
 
     def write_pot(self, pot_filename, language):
-        if not os.path.exists(os.path.dirname(pot_filename)):
-            os.makedirs(os.path.dirname(pot_filename))
+        if not os.path.exists(dirname(pot_filename)):
+            os.makedirs(dirname(pot_filename))
         with open(pot_filename,'w') as f:
             f.write(encode(self.as_pot(language)))
 
@@ -200,19 +195,6 @@ class POFile():
         if self._exists():
             locale_dirname=self._prepare_locale_dir()
             self._msg_fmt(locale_dirname)
-
-def line_starts_new_block(line, prev_line):
-    """Detect a new block in a lektor document. Blocks are delimited by a line
-    containing 3 or more dashes. This actually matches the definition of a
-    markdown level 2 heading, so this function returns False if no colon was
-    found in the line before, so if it isn't a new block with a key: value pair
-    before."""
-    if not prev_line or ':' not in prev_line:
-        return False # could be a markdown heading
-    line = line.strip()
-    return line == u'-' * len(line) and len(line) >= 3
-
-
 
 
 def split_paragraphs(document):
@@ -313,80 +295,88 @@ class I18NPlugin(Plugin):
                         blockcontent=dict(tokenize(blockvalue))
                         self.process_node(flowblockmodel.fields, blockcontent, source, blockname, root_path)
 
+    def translate_flowblock(self, field, field_content, language, flowblocks, nested=0):
+        """Iterate recursively into flowblock,
+        returning in serialized format with field values translated"""
+        ret = list()
+        for blockname, blockvalue in process_flowblock_data("".join(field_content)):
+            blocksep = "####" + "#" * nested
+            ret.append(f"{blocksep} {blockname} {blocksep}")
+            flowblockmodel = flowblocks[blockname]
+            flowblock_content = dict(tokenize(blockvalue))
+            for flowblock_field in flowblockmodel.fields:
+                if flowblock_field.name in flowblock_content:
+                    flowblock_field_content = "\n".join([item.strip() for item in flowblock_content[flowblock_field.name] if item and item.strip()])
+                    translated_content = self.translate_field(flowblock_field, flowblock_field_content, language, flowblocks, nested + 1)
+                    if "\n" in translated_content:
+                        ret.append(f"{flowblock_field.name}:\n\n{translated_content}".strip())
+                    else:
+                        ret.append(f"{flowblock_field.name}: {translated_content}".strip())
+                    # metaformat.serialize adds an extra dash
+                    ret.append("---" + "-" * nested)
+            if ret:
+                ret.pop()
+        return "\n".join(ret)
 
-    def __parse_source_structure(self, lines):
-        """Parse structure of source file. In short, there are two types of
-        chunks: those which need to be translated ('translatable') and those
-        which don't ('raw'). "title: test" could be split into:
-        [('raw': 'title: ',), ('translatable', 'test')]
-        NOTE: There is no guarantee that multiple raw blocks couldn't occur and
-        in fact due to implementation details, this actually happens."""
-        blocks = []
-        count_lines_block = 0 # counting the number of lines of the current block
-        is_content = False
-        prev_line = None
-        for line in lines:
-            stripped_line = line.strip()
-            if not stripped_line: # empty line
-                blocks.append(('raw', '\n'))
-                continue
-            # line like "---*" or a new block tag
-            if line_starts_new_block(stripped_line, prev_line) or \
-                    block2re.search(stripped_line):
-                count_lines_block=0
-                is_content = False
-                blocks.append(('raw', line))
+    def translate_field(self, field, field_content, language, flowblocks, nested=0):
+        """Return the value for a field, translated if enabled for this field"""
+        if ('translate' in field.options) and field.options['translate'] in ('True', 'true', '1', 1):
+            translator = gettext.translation("contents", join(self.i18npath, '_compiled'), languages=[language], fallback=True)
+            if self.trans_parwise:
+                return self.__trans_parwise(field_content, translator)
             else:
-                count_lines_block+=1
-                match = command_re.search(stripped_line)
-                if count_lines_block==1 and not is_content and match: # handle first line, while not in content
-                    key, value = match.groups()
-                    blocks.append(('raw', encode(key) + ':'))
-                    if value:
-                        blocks.append(('raw', ' '))
-                        blocks.append(('translatable', encode(value)))
-                    blocks.append(('raw', '\n'))
-                else:
-                    is_content=True
-            if is_content:
-                blocks.append(('translatable', line))
-            prev_line = line
-        # join neighbour blocks of same type
-        newblocks = []
-        for type, data in blocks:
-            if len(newblocks) > 0 and newblocks[-1][0] == type: # same type, merge
-                newblocks[-1][1] += data
-            else:
-                newblocks.append([type, data])
-        return newblocks
+                return self.__trans_linewise(field_content, translator)
+        elif isinstance(field.type, FlowType):
+            return self.translate_flowblock(field, field_content, language, flowblocks, nested)
+        else:
+            return field_content
 
+    def get_instance(self, pad, root, content, children_models):
+        """Returns a Page instance for content file"""
+        rv = dict()
+        rv["_path"] = os.path.join(root, 'contents.lr')
+        rv["_alt"] = PRIMARY_ALT
+        if "_model" not in content:
+            path = os.path.dirname(root.rstrip("/"))
+            while path:
+                if children_models.get(path):
+                    rv["_model"] = children_models[path]
+                    break
+                path = os.path.dirname(path.rstrip("/"))
+        return pad.instance_from_data(rv | content)
 
-    def translate_contents(self):
+    def translate_contents(self, builder):
         """Produce all content file alternatives (=translated pages)
         using the gettext translations available."""
+        children_models = dict()
+        flowblocks = load_flowblocks(self.env)
         for root, _, files in os.walk(os.path.join(self.env.root_path, 'content')):
             if re.match('content$', root):
                 continue
             if 'contents.lr' in files:
                 fn = os.path.join(root, 'contents.lr')
-                contents = FileContents(fn)
-                for language in self.translations_languages:
-                    translator = gettext.translation("contents", join(self.i18npath, '_compiled'), languages=[language], fallback=True)
-                    translated_filename = os.path.join(root, "contents+%s.lr" % language)
-                    with contents.open(encoding='utf-8') as file:
-                        chunks = self.__parse_source_structure(file.readlines())
-                    with open(translated_filename, "w") as f:
-                        for type, content in chunks:  # see __parse_source_structure
-                            if type == 'raw':
-                                f.write(content)
-                            elif type == 'translatable':
-                                if self.trans_parwise:  # translate per paragraph
-                                    f.write(self.__trans_parwise(content, translator))
-                                else:
-                                    f.write(self.__trans_linewise(content, translator))
-                            else:
-                                raise RuntimeError("Unknown chunk type detected, this is a bug")
+                content = dict()
+                content_alt = dict()
 
+                with open(fn, "rb") as f:
+                    for key, lines in tokenize(f, encoding="utf-8"):
+                        content[key] = "".join(lines)
+
+                instance = self.get_instance(builder.pad, root, content, children_models)
+
+                if instance.datamodel.child_config.model:
+                    children_models[root] = instance.datamodel.child_config.model
+
+                for language in self.translations_languages:
+                    content_alt[language] = copy.copy(content)
+                    if language != self.content_language:
+                        for field in instance.datamodel.fields:
+                            if field.name in content.keys():
+                                content_alt[language][field.name] = self.translate_field(field, content[field.name], language, flowblocks)
+                    translated_filename = os.path.join(root, "contents+%s.lr" % language)
+                    with open(translated_filename, "wb") as f:
+                        for line in serialize(content_alt[language].items(), encoding="utf-8"):
+                            f.write(line)
 
     def __trans_linewise(self, content, translator):
         """Translate the chunk linewise."""
@@ -447,8 +437,7 @@ class I18NPlugin(Plugin):
                 po_file.compile()
             # walk through contents.lr files and produce alternatives
             # before the build system creates its work queue
-            self.translate_contents()
-
+            self.translate_contents(builder)
 
     def on_after_build_all(self, builder, **extra):
         """Once the build process is over :

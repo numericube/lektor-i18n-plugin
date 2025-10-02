@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-#pylint: disable=wrong-import-position
-import sys
-
-PY3 = sys.version_info > (3,)
 
 import collections
 import datetime
@@ -14,10 +10,7 @@ import re
 import tempfile
 import time
 import copy
-if PY3:
-    from urllib.parse import urljoin
-else:
-    from urlparse import urljoin
+from urllib.parse import urljoin
 
 from lektor.pluginsystem import Plugin
 from lektor.datamodel import load_flowblocks
@@ -43,19 +36,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\\n"
 
 """
-
-
-# python2/3 compatibility layer
-
-encode = lambda s: (s if PY3 else s.encode('UTF-8'))
-
-def trans(translator, s):
-    """Thin gettext translation wrapper to allow compatibility with both Python2
-    and 3."""
-    if PY3:
-        return translator.gettext(s)
-    else:
-        return translator.ugettext(s)
 
 
 def truncate(s, length=32):
@@ -124,7 +104,7 @@ class Translations():
         if not os.path.exists(dirname(pot_filename)):
             os.makedirs(dirname(pot_filename))
         with open(pot_filename,'w') as f:
-            f.write(encode(self.as_pot(language)))
+            f.write(self.as_pot(language))
 
     def merge_pot(self, from_filenames, to_filename):
         msgcat=locate_executable('msgcat')
@@ -205,8 +185,8 @@ def split_paragraphs(document):
 # We cannot check for unused arguments here, they're mandated by the plugin API.
 #pylint:disable=unused-argument
 class I18NPlugin(Plugin):
-    name = u'i18n'
-    description = u'Internationalisation helper'
+    name = 'i18n'
+    description = 'Internationalisation helper'
 
     def translate_tag(self, s, *args, **kwargs):
         if not self.enabled:
@@ -219,7 +199,7 @@ class I18NPlugin(Plugin):
             return s
         else:
             translator = gettext.translation("contents", join(self.i18npath,'_compiled'), languages=[ctx.locale], fallback = True)
-            return trans(translator, s)
+            return translator.gettext(s)
 
     def choose_language(self, l, language, fallback='en', attribute='language'):
         """Will return from list 'l' the element with attribute 'attribute' set to given 'language'.
@@ -385,7 +365,7 @@ class I18NPlugin(Plugin):
             line_stripped = line.strip()
             trans_stripline = ''
             if line_stripped:
-                trans_stripline = trans(translator, line_stripped) # translate the stripped version
+                trans_stripline = translator.gettext(line_stripped) # translate the stripped version
             # and re-inject the stripped translation into original line (not stripped)
             lines.append(line.replace(line_stripped,
                         trans_stripline, 1))
@@ -398,8 +378,7 @@ class I18NPlugin(Plugin):
         result = []
         for paragraph in split_paragraphs(content):
             stripped = paragraph.strip('\n\r')
-            paragraph = paragraph.replace(stripped, trans(translator,
-                    stripped))
+            paragraph = paragraph.replace(stripped, translator.gettext(stripped))
             result.append(paragraph)
         return '\n\n'.join(result)
 

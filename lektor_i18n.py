@@ -462,3 +462,5 @@ class I18NPlugin(Plugin):
         for language in self.translations_languages:
             po_file=POFile(language, self.i18npath)
             po_file.generate()
+
+        self.pot_templates_file.close()

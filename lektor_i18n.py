@@ -37,6 +37,10 @@ msgstr ""
 
 """
 
+# regexp pattern matching prefix characters in markdown headings and lists
+# which we want to exclude from translation strings
+HL_PATTERN = re.compile(r"^\s*#+\s*|^\s*[*-]\s+")
+
 
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
@@ -257,8 +261,14 @@ class I18NPlugin(Plugin):
                     section = sections[field.name]
                     # if blockwise, each paragraph is one translatable message,
                     # otherwise each line
-                    chunks = (split_paragraphs(section) if self.trans_parwise
-                            else [x.strip() for x in section if x.strip()])
+                    if self.trans_parwise:
+                        chunks = split_paragraphs(section)
+                    else:
+                        chunks = []
+                        for line in section:
+                            line_stripped = re.sub(HL_PATTERN, "", line.strip())
+                            if line_stripped:
+                                chunks.append(line_stripped)
                     for chunk in chunks:
                         translations.add(chunk.strip('\r\n'),
                             "%s (%s:%s.%s)" % (
@@ -362,7 +372,7 @@ class I18NPlugin(Plugin):
         """Translate the chunk linewise."""
         lines = []
         for line in content.split('\n'):
-            line_stripped = line.strip()
+            line_stripped = re.sub(HL_PATTERN, "", line.strip())
             trans_stripline = ''
             if line_stripped:
                 trans_stripline = translator.gettext(line_stripped) # translate the stripped version

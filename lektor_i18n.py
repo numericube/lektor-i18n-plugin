@@ -297,7 +297,7 @@ class I18NPlugin(Plugin):
             flowblock_content_translated = dict()
             for flowblock_field in flowblockmodel.fields:
                 if flowblock_field.name in flowblock_content:
-                    flowblock_field_content = "\n".join([item.strip() for item in flowblock_content[flowblock_field.name] if item and item.strip()])
+                    flowblock_field_content = "\n".join([item.strip() for item in flowblock_content[flowblock_field.name] if item])
                     flowblock_content_translated[flowblock_field.name] = self.translate_field(flowblock_field, flowblock_field_content, language, flowblocks, nested + 1)
             for line in serialize(flowblock_content_translated.items()):
                 ret.append(line)

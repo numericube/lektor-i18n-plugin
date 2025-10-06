@@ -291,22 +291,17 @@ class I18NPlugin(Plugin):
         ret = list()
         for blockname, blockvalue in process_flowblock_data("".join(field_content)):
             blocksep = "####" + "#" * nested
-            ret.append(f"{blocksep} {blockname} {blocksep}")
+            ret.append(f"{blocksep} {blockname} {blocksep}\n")
             flowblockmodel = flowblocks[blockname]
             flowblock_content = dict(tokenize(blockvalue))
+            flowblock_content_translated = dict()
             for flowblock_field in flowblockmodel.fields:
                 if flowblock_field.name in flowblock_content:
                     flowblock_field_content = "\n".join([item.strip() for item in flowblock_content[flowblock_field.name] if item and item.strip()])
-                    translated_content = self.translate_field(flowblock_field, flowblock_field_content, language, flowblocks, nested + 1)
-                    if "\n" in translated_content:
-                        ret.append(f"{flowblock_field.name}:\n\n{translated_content}".strip())
-                    else:
-                        ret.append(f"{flowblock_field.name}: {translated_content}".strip())
-                    # metaformat.serialize adds an extra dash
-                    ret.append("---" + "-" * nested)
-            if ret:
-                ret.pop()
-        return "\n".join(ret)
+                    flowblock_content_translated[flowblock_field.name] = self.translate_field(flowblock_field, flowblock_field_content, language, flowblocks, nested + 1)
+            for line in serialize(flowblock_content_translated.items()):
+                ret.append(line)
+        return "".join(ret).strip()
 
     def translate_field(self, field, field_content, language, flowblocks, nested=0):
         """Return the value for a field, translated if enabled for this field"""

@@ -35,6 +35,10 @@ i18n = "lektor_i18n:I18NPlugin"
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
+[lint]
+explicit-preview-rules = true
+allowed-confusables = ["’", "–"]
+
 [tool.pdm]
 distribution = true
 
@@ -49,4 +53,32 @@ source-includes = [
 [tool.pdm.dev-dependencies]
 dev = [
     "lektor",
+    "ruff>=0.1.14",
 ]
+
+[tool.ruff]
+extend-exclude = [".pdm-build"]
+
+[tool.ruff.lint]
+select = [
+    "F", # pyflakes
+    "E", "W", # pycodestyle
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "Q", # flake8-quotes
+    "YTT", # flake8-2020
+    "C4", # flake8-comprehensions
+    "T10", # flake8-debugger
+    "EM", # flake8-errmsg
+    "FA", # flake8-future-annotations
+    "T20", # flake8-print
+    "RSE", # flake8-raise
+    "I", # isort
+    "C90", # mccabe
+    "PGH", # pygrep-hooks
+    #"PL", # pylint
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+order-by-type = false

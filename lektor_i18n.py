@@ -245,17 +245,17 @@ class I18NPlugin(Plugin):
             )
             return translator.gettext(s)
 
-    def choose_language(self, l, language, fallback="en", attribute="language"):
-        """Will return from list 'l' the element with attribute 'attribute' set to given 'language'.
+    def choose_language(self, items, language, fallback="en", attribute="language"):
+        """Will return from list 'item_list' the element with attribute 'attribute' set to given 'language'.
         If none is found, will try to return element with attribute 'attribute' set to given 'fallback'.
         Else returns None."""  # noqa: E501
         language = language.strip().lower()
         fallback = fallback.strip().lower()
-        for item in l:
+        for item in items:
             if item[attribute].strip().lower() == language:
                 return item
         # fallback
-        for item in l:
+        for item in items:
             if item[attribute].strip().lower() == fallback:
                 return item
         return None

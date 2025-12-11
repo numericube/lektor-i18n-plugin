@@ -1,11 +1,11 @@
 import collections
 import copy
-import datetime
 import gettext
 import os
 import re
 import tempfile
-import time
+from datetime import datetime
+from datetime import timezone
 from os.path import dirname
 from os.path import exists
 from os.path import join
@@ -99,8 +99,7 @@ class Translations:
 
     def as_pot(self, content_language):
         """returns a POT version of the translation dictionnary"""
-        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-        now += "+%s" % (time.tzname[0])
+        now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M %Z")
         result = POT_HEADER % {"LANGUAGE": content_language, "NOW": now}
 
         for msg, paths in self.translations.items():

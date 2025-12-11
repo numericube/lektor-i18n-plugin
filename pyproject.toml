@@ -1,0 +1,52 @@
+[project]
+name = "lektor-i18n"
+version = "0.4.4"
+description = "A plugin for using GetText .PO files to translate Lektor sites content"
+keywords = ["Lektor plugin",]
+urls.Home = "https://github.com/numericube/lektor-i18n-plugin"
+authors = [
+    {name = "Jérôme Charaoui", email = "jerome@riseup.net"},
+    {name = "NumeriCube", email = "support@numericube.com"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Plugins",
+    "Environment :: Web Environment",
+    "Framework :: Lektor",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing",
+	"Topic :: Software Development :: Internationalization",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = {file = "LICENSE"}
+
+[project.entry-points."lektor.plugins"]
+i18n = "lektor_i18n:I18NPlugin"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+includes = [
+    "lektor_i18n.py",
+]
+source-includes = [
+    "README.md",
+]
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "lektor",
+]

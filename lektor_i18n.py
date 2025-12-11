@@ -182,7 +182,8 @@ class POFile:
         portable_popen(cmdline, cwd=self.i18npath).wait()
 
     def _prepare_locale_dir(self):
-        """Prepares the i18n/<language>/LC_MESSAGES/ to store the .mo file ; returns the dirname"""
+        """Prepares the i18n/<language>/LC_MESSAGES/ to store the .mo file;
+        returns the dirname"""
         directory = join("_compiled", self.language, "LC_MESSAGES")
         try:
             os.makedirs(join(self.i18npath, directory))
@@ -247,7 +248,7 @@ class I18NPlugin(Plugin):
     def choose_language(self, l, language, fallback="en", attribute="language"):
         """Will return from list 'l' the element with attribute 'attribute' set to given 'language'.
         If none is found, will try to return element with attribute 'attribute' set to given 'fallback'.
-        Else returns None."""
+        Else returns None."""  # noqa: E501
         language = language.strip().lower()
         fallback = fallback.strip().lower()
         for item in l:
@@ -284,7 +285,10 @@ class I18NPlugin(Plugin):
                 self.get_config().get("translations").replace(" ", "").split(",")
             )
         except AttributeError:
-            msg = 'Please specify the "translations" configuration option in configs/i18n.ini'
+            msg = (
+                "Please specify the 'translations' configuration option ",
+                "in configs/i18n.ini",
+            )
             raise RuntimeError(msg)
 
         if self.content_language not in self.translations_languages:
@@ -297,6 +301,7 @@ class I18NPlugin(Plugin):
     def process_node(self, fields, sections, source, zone, root_path):
         """For a given node (), identify all fields to translate, and add new
         fields to translations memory. Flow blocks are handled recursively."""
+        source_relpath = relpath(source.source_filename, root_path)
         for field in fields:
             if (
                 ("translate" in field.options)
@@ -316,9 +321,11 @@ class I18NPlugin(Plugin):
                             if line_stripped:
                                 chunks.append(line_stripped)
                     for chunk in chunks:
+                        translation_source = f"{source_relpath}:{zone}.{field.name}"
+                        translation_url = urljoin(self.url_prefix, source.url_path)
                         translations.add(
                             chunk.strip("\r\n"),
-                            f"{urljoin(self.url_prefix, source.url_path)} ({relpath(source.source_filename, root_path)}:{zone}.{field.name})",
+                            f"{translation_url} ({translation_source})",
                         )
 
             if isinstance(field.type, FlowType):
@@ -504,8 +511,9 @@ class I18NPlugin(Plugin):
                 f"i18n activated, with main language {self.content_language}"
             )
             templates_pot_filename = self.get_templates_pot_filename()
+            templates_relpath = relpath(templates_pot_filename, builder.env.root_path)
             reporter.report_generic(
-                f"Parsing templates for i18n into {relpath(templates_pot_filename, builder.env.root_path)}"
+                f"Parsing templates for i18n into {templates_relpath}"
             )
             translations.parse_templates(templates_pot_filename)
             # compile existing po files

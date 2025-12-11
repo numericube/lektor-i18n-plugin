@@ -178,11 +178,6 @@ All translation files (`contents-*.po`) are then compiled and merged with the
 original `contents.lr` files to produce all the `contents-<language>.lr` files
 in their respective directories.
 
-Due to the way Lektor building system is designed, all these steps happen on
-every build. This means that sometime, after translating the `contents-*.po`
-files, it might be required to run the build system twice to see the
-translation appear in the final HTML files.
-
 ### Project file
 
 It's still the user responsability to modify the project file in order to

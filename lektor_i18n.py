@@ -45,7 +45,6 @@ HL_PATTERN = re.compile(r"^\s*#+\s*|^\s*[*-]\s+")
 def truncate(s, length=32):
     return (s[:length] + '..') if len(s) > length else s
 
-#pylint: disable=too-few-public-methods,redefined-variable-type
 class TemplateTranslator(object):
     def __init__(self, i18npath):
         self.i18npath = i18npath
@@ -186,8 +185,7 @@ def split_paragraphs(document):
         document = ''.join(document) # list of lines
     return re.split('\n(?:\\s*\n){1,}', document)
 
-# We cannot check for unused arguments here, they're mandated by the plugin API.
-#pylint:disable=unused-argument
+
 class I18NPlugin(Plugin):
     name = 'i18n'
     description = 'Internationalisation helper'
@@ -220,7 +218,6 @@ class I18NPlugin(Plugin):
                 return item
         return None
 
-    #pylint: disable=attribute-defined-outside-init
     def on_setup_env(self, **extra):
         """Setup `env` for the plugin"""
         # Read configuration

@@ -47,6 +47,7 @@ includes = [
     "lektor_i18n.py",
 ]
 source-includes = [
+    "CHANGELOG.md",
     "README.md",
 ]
 

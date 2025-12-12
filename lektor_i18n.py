@@ -123,7 +123,7 @@ class Translations:
 
     def merge_pot(self, from_filenames, to_filename):
         msgcat = locate_executable("msgcat")
-        cmdline = [msgcat, "--use-first"]
+        cmdline = [msgcat]
         cmdline.extend(from_filenames)
         cmdline.extend(("-o", to_filename))
         reporter.report_debug_info("msgcat cmd line", cmdline)
@@ -231,10 +231,6 @@ class I18NPlugin(Plugin):
         s = s.strip()
         ctx = get_ctx()
         if self.content_language == ctx.locale:
-            translations.add(s, "(dynamic)")
-            reporter.report_debug_info(
-                "added to translation memory (dynamic): ", truncate(s)
-            )
             return s
         else:
             translator = gettext.translation(

@@ -90,7 +90,7 @@ class Translations:
     def add(self, text, source):
         if text not in self.translations.keys():
             self.translations[text] = []
-            reporter.report_debug_info("added to translation memory : ", truncate(text))
+            reporter.report_debug_info("added to translation memory", truncate(text))
         if source not in self.translations[text]:
             self.translations[text].append(source)
 

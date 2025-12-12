@@ -323,7 +323,7 @@ class I18NPlugin(Plugin):
                         translation_url = urljoin(self.url_prefix, source.url_path)
                         translations.add(
                             chunk.strip("\r\n"),
-                            f"{translation_url} ({translation_source})",
+                            f"{translation_url} {translation_source}",
                         )
 
             if isinstance(field.type, FlowType):

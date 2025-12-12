@@ -1,6 +1,5 @@
 [project]
 name = "lektor-i18n"
-version = "0.4.4"
 description = "A plugin for using GetText .PO files to translate Lektor sites content"
 keywords = ["Lektor plugin",]
 urls.Home = "https://github.com/numericube/lektor-i18n-plugin"
@@ -27,6 +26,7 @@ classifiers = [
 requires-python = ">=3.8"
 readme = "README.md"
 license = {file = "LICENSE"}
+dynamic = ["version"]
 
 [project.entry-points."lektor.plugins"]
 i18n = "lektor_i18n:I18NPlugin"
@@ -55,6 +55,9 @@ dev = [
     "lektor",
     "ruff>=0.1.14",
 ]
+
+[tool.pdm.version]
+source = "scm"
 
 [tool.ruff]
 extend-exclude = [".pdm-build"]

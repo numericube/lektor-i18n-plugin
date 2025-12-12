@@ -297,7 +297,9 @@ class I18NPlugin(Plugin):
     def process_node(self, fields, sections, source, zone, root_path):
         """For a given node (), identify all fields to translate, and add new
         fields to translations memory. Flow blocks are handled recursively."""
-        source_relpath = relpath(source.source_filename, root_path)
+        source_filename = source.source_filename.replace(f"+{self.content_language}.lr",
+                                                         ".lr")
+        source_relpath = relpath(source_filename, root_path)
         for field in fields:
             if (
                 ("translate" in field.options)

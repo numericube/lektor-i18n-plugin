@@ -1,0 +1,88 @@
+[project]
+name = "lektor-i18n"
+description = "A plugin for using GetText .PO files to translate Lektor sites content"
+keywords = ["Lektor plugin",]
+urls.Home = "https://github.com/numericube/lektor-i18n-plugin"
+authors = [
+    {name = "Jérôme Charaoui", email = "jerome@riseup.net"},
+    {name = "NumeriCube", email = "support@numericube.com"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Plugins",
+    "Environment :: Web Environment",
+    "Framework :: Lektor",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing",
+	"Topic :: Software Development :: Internationalization",
+]
+requires-python = ">=3.8"
+readme = "README.md"
+license = {file = "LICENSE"}
+dynamic = ["version"]
+
+[project.entry-points."lektor.plugins"]
+i18n = "lektor_i18n:I18NPlugin"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[lint]
+explicit-preview-rules = true
+allowed-confusables = ["’", "–"]
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.build]
+includes = [
+    "lektor_i18n.py",
+]
+source-includes = [
+    "CHANGELOG.md",
+    "README.md",
+]
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "lektor",
+    "ruff>=0.1.14",
+]
+
+[tool.pdm.version]
+source = "scm"
+
+[tool.ruff]
+extend-exclude = [".pdm-build"]
+
+[tool.ruff.lint]
+select = [
+    "F", # pyflakes
+    "E", "W", # pycodestyle
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "Q", # flake8-quotes
+    "YTT", # flake8-2020
+    "C4", # flake8-comprehensions
+    "T10", # flake8-debugger
+    "EM", # flake8-errmsg
+    "FA", # flake8-future-annotations
+    "T20", # flake8-print
+    "RSE", # flake8-raise
+    "I", # isort
+    "C90", # mccabe
+    "PGH", # pygrep-hooks
+    #"PL", # pylint
+]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+order-by-type = false
